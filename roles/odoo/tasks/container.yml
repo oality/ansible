@@ -1,0 +1,100 @@
+- name: odoo compose | add odoo directory
+  file:
+    path: "/data/odoo"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: 0755
+    state: directory
+  become: yes
+
+- name: odoo compose | add odoo config directory
+  file:
+    path: "/data/odoo/config"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: 0755
+    state: directory
+
+- name: odoo compose | add odoo config file
+  template:
+    src: "templates/odoo.conf"
+    dest: "/data/odoo/config/odoo.conf"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: 0755
+
+- name: odoo compose | add odoo addons directory
+  file:
+    path: "/data/odoo/addons"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: 0755
+    state: directory
+
+- name: odoo compose | add odoo pgdata directory
+  file:
+    path: "/data/odoo/pgdata"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: 0755
+    state: directory
+
+- name: make sure required docker package is installed
+  pip:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - docker==3.7.0
+    - docker-compose=1.23.2
+  become: yes
+
+# - name: Check if Docker Compose is installed
+#   command: docker-compose --version
+#   register: docker_compose_check
+#   ignore_errors: yes
+
+# - name: Download and install Docker Compose
+#   get_url:
+#     url: https://github.com/docker/compose/releases/download/1.23.1/docker-compose-Linux-x86_64
+#     dest: /usr/bin/docker-compose
+#     mode: 0755
+#   when:
+#     - docker_compose_check.msg is defined
+#     - docker_compose_check.msg.find('No such file or directory') != -1
+#   become: yes
+
+- name: docker-compose odoo service
+  docker_service:
+    project_name: odoo
+    definition:
+      version: '2'
+      services:
+        web:
+          image: odoo:12.0
+          depends_on:
+            - db
+          ports:
+            - "8069:8069"
+          volumes:
+            - odoo-web-data:/var/lib/odoo
+            - /data/odoo/config:/etc/odoo
+            - /data/odoo/addons:/mnt/extra-addons
+        db:
+          image: postgres:10
+          environment:
+            - POSTGRES_PASSWORD=odoo
+            - POSTGRES_USER=odoo
+            - PGDATA=/var/lib/postgresql/data/pgdata
+            - POSTGRES_DB=postgres
+          volumes:
+            - odoo-db-data:/var/lib/postgresql/data/pgdata
+      volumes:
+        odoo-web-data:
+        odoo-db-data:
+  # assert:
+  #   that:
+  #     - "web.odoo_web_1.state.running"
+  #     - "db.odoo_db_1.state.running"
+
+
+# add cron to backup pgdata
