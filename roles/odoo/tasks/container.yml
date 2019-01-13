@@ -45,7 +45,7 @@
     state: present
   with_items:
     - docker==3.7.0
-    - docker-compose=1.23.2
+    - docker-compose==1.23.2
   become: yes
 
 # - name: Check if Docker Compose is installed
@@ -79,6 +79,8 @@
             - odoo-web-data:/var/lib/odoo
             - /data/odoo/config:/etc/odoo
             - /data/odoo/addons:/mnt/extra-addons
+          labels:
+            - "traefik.frontend.rule=Host:{{ odoo_hostname }}" #;AddPrefix:/VirtualHostBase/https/{{ odoo_hostname }}/VirtualHostRoot"
         db:
           image: postgres:10
           environment:
@@ -91,7 +93,7 @@
       volumes:
         odoo-web-data:
         odoo-db-data:
-  # assert:
+  # asse0rt:
   #   that:
   #     - "web.odoo_web_1.state.running"
   #     - "db.odoo_db_1.state.running"
