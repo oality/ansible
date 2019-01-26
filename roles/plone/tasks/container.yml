@@ -1,0 +1,75 @@
+- name: plone docker-compose | add plone directory
+  file:
+    path: "/plone"
+    owner: "plone"
+    group: "plone"
+    mode: 0755
+    state: directory
+  become: yes
+
+- name: plone docker-compose | add plone config directory
+  file:
+    path: "{{ item }}"
+    owner: "plone"
+    group: "plone"
+    mode: 0755
+    state: directory
+  with_items:
+    - "/data/{{ project_id }}"
+    - "/data/{{ project_id }}/log"
+  become: yes
+
+- name: make sure required docker package is installed
+  pip:
+    name: '{{ item }}'
+    state: present
+  with_items:
+    - docker=={{ py_docker_version }}
+    - docker-compose=={{ docker_compose_version }}
+  become: yes
+
+- name: docker-compose plone {{ project_id }} service
+  docker_service:
+    project_name: '{{ project_id }}'
+    definition:
+      version: '3.5'
+      services:
+        zeo:
+          image: oality/{{ project_id }}:latest
+          volumes:
+            - /data/{{ project_id }}:/plone/var
+          command: zeoserver
+          healthcheck:
+            test: ["CMD", "nc", "-z", "-w5", "127.0.0.1", "8100"]
+        instance1:
+          image: oality/{{ project_id }}:latest
+          environment:
+            - ZEO_ADDRESS=zeo:8100
+            - ZEO_HOST=db
+            - ZEO_PORT=8100
+          links:
+            - zeo:db
+          labels:
+            - "traefik.frontend.rule=Host:{{ hostname }};AddPrefix:/VirtualHostBase/https/{{ hostname }}/plone/VirtualHostRoot"
+        instance2:
+          image: oality/{{ project_id }}:latest
+          environment:
+            - ZEO_ADDRESS=zeo:8100
+            - ZEO_HOST=db
+            - ZEO_PORT=8100
+          links:
+            - zeo:db
+          labels:
+            - "traefik.frontend.rule=Host:{{ hostname }};AddPrefix:/VirtualHostBase/https/{{ hostname }}/plone/VirtualHostRoot"
+
+      networks:
+        default:
+          external:
+            name: proxy
+  # asse0rt:
+  #   that:
+  #     - "web.plone_web_1.state.running"
+  #     - "db.plone_db_1.state.running"
+
+
+# add cron to backup pgdata
