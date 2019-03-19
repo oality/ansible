@@ -1,0 +1,13 @@
+---
+- name: Install some basic packages
+  yum:
+    name:
+      - bash-completion
+      - bash-completion-extras
+      - htop
+      - epel-release
+    state: present
+
+
+- include: docker.yml
+# - include: user.yml

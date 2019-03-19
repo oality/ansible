@@ -1,25 +1,53 @@
 - name: plone docker-compose | add plone directory
   file:
     path: "/plone"
-    owner: "plone"
-    group: "plone"
+    owner: plone
+    group: plone
     mode: 0755
     state: directory
   become: yes
+  tags:
+    - plone
+
+- name: plone docker-compose | add plone reload script
+  template:
+    src: reload.sh.j2
+    dest: "/plone/reload.sh"
+    owner: plone
+    group: plone
+    mode: 0755
+  become: yes
+  tags:
+    - plone
+
+- name: plone docker-compose | add plone {{ project_id }} directory
+  file:
+    path: "/plone/{{ project_id }}"
+    owner: plone
+    group: plone
+    mode: 0755
+    state: directory
+  become: yes
+  tags:
+    - plone
 
 - name: plone docker-compose | add plone config directory
   file:
     path: "{{ item }}"
-    owner: "plone"
-    group: "plone"
+    owner: plone
+    group: plone
     mode: 0755
     state: directory
   with_items:
     - "/data/{{ project_id }}"
     - "/data/{{ project_id }}/log"
+    - "/data/{{ project_id }}/blobstorage"
+    - "/data/{{ project_id }}/filestorage"
   become: yes
+  tags:
+    - plone
 
-- name: make sure required docker package is installed
+- name: plone docker-compose |  make sure required docker package is installed
   pip:
     name: '{{ item }}'
     state: present
@@ -27,46 +55,31 @@
     - docker=={{ py_docker_version }}
     - docker-compose=={{ docker_compose_version }}
   become: yes
+  tags:
+    - plone
+
+- name: plone docker-compose |  set docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: "/plone/{{ project_id }}/docker-compose.yml"
+    owner: plone
+    group: plone
+    mode: 0700
+  # notify: reload {{ project_id }}
+  become: yes
+  tags: plone
 
 - name: docker-compose plone {{ project_id }} service
   docker_service:
     project_name: '{{ project_id }}'
     pull: yes
-    definition:
-      version: '3.5'
-      services:
-        zeo:
-          image: oality/{{ project_id }}:latest
-          volumes:
-            - /data/{{ project_id }}:/plone/var
-          command: zeoserver
-          healthcheck:
-            test: ["CMD", "nc", "-z", "-w5", "127.0.0.1", "8100"]
-        instance1:
-          image: oality/{{ project_id }}:latest
-          environment:
-            - ZEO_ADDRESS=zeo:8100
-            - ZEO_HOST=db
-            - ZEO_PORT=8100
-          links:
-            - zeo:db
-          labels:
-            - "traefik.frontend.rule=Host:{{ hostname }};AddPrefix:/VirtualHostBase/https/{{ hostname }}/plone/VirtualHostRoot"
-        instance2:
-          image: oality/{{ project_id }}:latest
-          environment:
-            - ZEO_ADDRESS=zeo:8100
-            - ZEO_HOST=db
-            - ZEO_PORT=8100
-          links:
-            - zeo:db
-          labels:
-            - "traefik.frontend.rule=Host:{{ hostname }};AddPrefix:/VirtualHostBase/https/{{ hostname }}/plone/VirtualHostRoot"
-
-      networks:
-        default:
-          external:
-            name: proxy
+    project_src: "/plone/{{ project_id }}"
+  # notify: reload {{ project_id }}
+  become: true
+  become_user: plone
+  tags:
+    - plone
+    - update
   # asse0rt:
   #   that:
   #     - "web.plone_web_1.state.running"

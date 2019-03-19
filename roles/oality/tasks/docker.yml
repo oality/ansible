@@ -1,0 +1,91 @@
+---
+- name: docker
+  yum:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+    state: present
+  tags:
+    - docker
+
+- name: Add Docker GPG key
+  rpm_key:
+    key: https://download.docker.com/linux/centos/gpg
+    state: present
+  tags:
+    - docker
+
+- name: Add Docker repository
+  get_url:
+    url: https://download.docker.com/linux/centos/docker-ce.repo
+    dest: /etc/yum.repos.d/docker-ce.repo
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - docker
+
+- name: Configure Docker Edge repo
+  ini_file:
+    dest: /etc/yum.repos.d/docker-ce.repo
+    section: docker-ce-edge
+    option: enabled
+    value: 0
+  tags:
+    - docker
+
+- name: Ensure docker users are added to the docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  with_items:
+    - contabo
+  tags:
+    - docker
+
+- name: Install Docker
+  package:
+    name: docker-ce
+    state: present
+  notify: restart docker
+  tags:
+    - docker
+
+- name: Ensure Docker is started and enabled at boot
+  service:
+    name: docker
+    state: started
+    enabled: true
+  tags:
+    - docker
+
+- name: Check current docker-compose version.
+  command: docker-compose --version
+  register: docker_compose_current_version
+  changed_when: false
+  failed_when: false
+  tags:
+    - docker
+    - docker-compose
+
+- name: Delete existing docker-compose version if it's different.
+  file:
+    path: /usr/local/bin/docker-compose
+    state: absent
+  when: >
+    docker_compose_current_version.stdout is defined
+    and docker_compose_version not in docker_compose_current_version.stdout
+  tags:
+    - docker
+    - docker-compose
+
+- name: Install Docker Compose (if configured)
+  get_url:
+    url: https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64
+    dest: /usr/local/bin/docker-compose
+    mode: 0755
+  tags:
+    - docker
+    - docker-compose

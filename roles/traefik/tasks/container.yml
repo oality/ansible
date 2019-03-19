@@ -1,0 +1,51 @@
+- name: traefik docker-compose | add traefik directory
+  file:
+    path: "/home/oality/traefik"
+    owner: oality
+    group: oality
+    mode: 0755
+    state: directory
+  become: yes
+  tags:
+    - traefik
+
+- name: Ensures acme.json file exists
+  file:
+    path: "/home/oality/traefik/acme.json"
+    state: touch
+    mode: 0600
+  tags:
+    - traefik
+
+- name: Adding traefik.toml file
+  template:
+    src: ../templates/traefik.toml.j2
+    dest: "/home/oality/traefik/traefik.toml"
+    mode: 0600
+  tags:
+    - traefik
+
+- name: Create proxy network
+  docker_network:
+    name: proxy
+  tags:
+    - traefik
+
+- name: Create traefik container
+  docker_container:
+    name: traefik
+    image: traefik
+    restart_policy: unless-stopped
+    networks:
+      - name: proxy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8000:8080"
+    volumes:
+      - /home/oality/traefik/traefik.toml:/etc/traefik/traefik.toml
+      - /home/oality/traefik/acme.json:/acme.json
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --api --docker
+  tags:
+    - traefik

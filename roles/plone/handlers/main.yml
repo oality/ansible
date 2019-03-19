@@ -1,0 +1,16 @@
+- name: restart {{ project_id }}
+  shell: docker-compose restart
+  args:
+    chdir: "/plone/{{ project_id }}"
+  tags: plone
+
+- name: reload {{ project_id }}
+  shell: |
+    docker-compose up -d --force-recreate --no-deps instance1
+    until docker inspect --format='{{ '{{' }}gt .State.Health.Status "healthy"{{ '}}' }}' dslocations_instance1_1; do
+        sleep 1
+    done
+    docker-compose up -d --force-recreate --no-deps instance2
+  args:
+    chdir: "/plone/{{ project_id }}"
+  tags: plone

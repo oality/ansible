@@ -1,0 +1,42 @@
+version: '3.5'
+services:
+  zeo:
+    image: oality/{{ project_id }}:latest
+    volumes:
+      - /data/{{ project_id }}:/plone/var
+    command: zeoserver
+    healthcheck:
+      test: ["CMD", "nc", "-z", "-w5", "127.0.0.1", "8100"]
+  instance1:
+    image: oality/{{ project_id }}:latest
+    restart: always
+    environment:
+      - ZEO_ADDRESS=zeo:8100
+      - ZEO_HOST=db
+      - ZEO_PORT=8100
+    links:
+      - zeo:db
+    labels:
+      - "traefik.frontend.rule=Host:{{ hostname }},{{ hostname_redirect }};AddPrefix:/VirtualHostBase/https/{{ hostname }}/plone/VirtualHostRoot"
+      - "traefik.frontend.redirect.regex=^https?://{{ hostname_redirect }}/(.*)"
+      - "traefik.frontend.redirect.replacement={{ hostname }}/$${1}"
+      - "traefik.frontend.redirect.permanent=true"
+  instance2:
+    image: oality/{{ project_id }}:latest
+    restart: always
+    environment:
+      - ZEO_ADDRESS=zeo:8100
+      - ZEO_HOST=db
+      - ZEO_PORT=8100
+    links:
+      - zeo:db
+    labels:
+      - "traefik.frontend.rule=Host:{{ hostname }},{{ hostname_redirect }};AddPrefix:/VirtualHostBase/https/{{ hostname }}/plone/VirtualHostRoot"
+      - "traefik.frontend.redirect.regex=^https?://{{ hostname_redirect }}/(.*)"
+      - "traefik.frontend.redirect.replacement={{ hostname }}/$${1}"
+      - "traefik.frontend.redirect.permanent=true"
+
+networks:
+  default:
+    external:
+      name: proxy

@@ -75,6 +75,7 @@
             - db
           ports:
             - "8069:8069"
+          restart: always
           volumes:
             - odoo-web-data:/var/lib/odoo
             - /data/odoo/config:/etc/odoo

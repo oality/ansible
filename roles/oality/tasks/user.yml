@@ -1,0 +1,31 @@
+---
+- name: Install oality yml
+  user:
+    name: oality
+    comment: Oality base user
+    uid: 1000
+    password: NOT_LOGGING_PASSWORD
+    groups:
+     - wheel
+     - docker
+
+- name: Add .ssh directory
+ file:
+   path: /home/oality/.ssh
+   owner: oality
+   group: oality
+   mode: 0700
+   state: directory
+
+- name: Add authorized_keys
+  file:
+    path: /home/oality/.ssh/authorized_keys
+    owner: oality
+    group: oality
+    mode: 0600
+
+- name: Add authorized_keys value
+  lineinfile:
+    path: /home/oality/.ssh/authorized_keys
+    line: "{{ ssh-pubkey }}"
+    create: yes
