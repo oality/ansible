@@ -1,8 +1,8 @@
 - name: traefik docker-compose | add traefik directory
   file:
-    path: "/home/oality/traefik"
-    owner: oality
-    group: oality
+    path: "/home/plone/traefik"
+    owner: plone
+    group: plone
     mode: 0755
     state: directory
   become: yes
@@ -11,17 +11,23 @@
 
 - name: Ensures acme.json file exists
   file:
-    path: "/home/oality/traefik/acme.json"
+    path: "/home/plone/traefik/acme.json"
+    owner: plone
+    group: plone
     state: touch
     mode: 0600
+  become: yes
   tags:
     - traefik
 
 - name: Adding traefik.toml file
   template:
     src: ../templates/traefik.toml.j2
-    dest: "/home/oality/traefik/traefik.toml"
+    dest: "/home/plone/traefik/traefik.toml"
+    owner: plone
+    group: plone
     mode: 0600
+  become: yes
   tags:
     - traefik
 
@@ -31,21 +37,23 @@
   tags:
     - traefik
 
-- name: Create traefik container
-  docker_container:
-    name: traefik
-    image: traefik
-    restart_policy: unless-stopped
-    networks:
-      - name: proxy
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8000:8080"
-    volumes:
-      - /home/oality/traefik/traefik.toml:/etc/traefik/traefik.toml
-      - /home/oality/traefik/acme.json:/acme.json
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --api --docker
+- name: plone docker-compose |  set docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: "/home/plone/traefik/docker-compose.yml"
+    owner: plone
+    group: plone
+    mode: 0700
+  become: yes
+  tags: traefik
+
+- name: docker-compose plone {{ project_id }} service
+  docker_service:
+    project_name: traefik
+    pull: yes
+    project_src: "/home/plone/traefik"
+  become: true
+  become_user: plone
   tags:
     - traefik
+
