@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+docker-compose pull
+docker-compose up -d --force-recreate --no-deps zeo
+until [ `docker inspect -f {{ '{{' }}.State.Health.Status{{ '}}' }} $(docker-compose ps -q zeo)` == "healthy" ]; do
+    sleep 1
+done
+
+docker-compose up -d --force-recreate --no-deps instance1
+until [ `docker inspect -f {{ '{{' }}.State.Health.Status{{ '}}' }} $(docker-compose ps -q instance1)` == "healthy" ]; do
+    sleep 1
+done
+docker-compose up -d --force-recreate --no-deps instance2

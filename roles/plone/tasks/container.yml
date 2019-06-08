@@ -9,17 +9,6 @@
   tags:
     - plone
 
-- name: plone docker-compose | add plone reload script
-  template:
-    src: reload.sh.j2
-    dest: "/plone/reload.sh"
-    owner: plone
-    group: plone
-    mode: 0755
-  become: yes
-  tags:
-    - plone
-
 - name: plone docker-compose | add plone {{ project_id }} directory
   file:
     path: "/plone/{{ project_id }}"
@@ -30,6 +19,29 @@
   become: yes
   tags:
     - plone
+
+- name: plone | add {{ project_id }} restart script
+  template:
+    src: restart.j2
+    dest: "/plone/{{ project_id }}/restart"
+    owner: plone
+    group: plone
+    mode: 0755
+  become: yes
+  tags:
+    - plone
+
+- name: plone docker-compose | add plone reload script
+  template:
+    src: reload.j2
+    dest: "/plone/{{ project_id }}/reload"
+    owner: plone
+    group: plone
+    mode: 0755
+  become: yes
+  tags:
+    - plone
+
 
 - name: plone docker-compose | add plone config directory
   file:
@@ -43,6 +55,7 @@
     - "/data/{{ project_id }}/log"
     - "/data/{{ project_id }}/blobstorage"
     - "/data/{{ project_id }}/filestorage"
+    - "/backups/{{ project_id }}"
   become: yes
   tags:
     - plone
@@ -86,4 +99,31 @@
   #     - "db.plone_db_1.state.running"
 
 
+
+
 # add cron to backup 
+- name: docker-compose start backup at 2am.
+  cron:
+    name: "backup {{ project_id }}"
+    minute: "0"
+    hour: "2"
+    job: "docker-compose -f /plone/{{ project_id }}/docker-compose.yml run --rm -u plone --entrypoint '' -v /backups/{{ project_id }}:/backups zeo bin/backup"
+    user: plone
+  become: yes
+  tags: 
+    - plone
+    - cron
+
+- name: docker-compose start pack on monday at 3am.
+  cron:
+    name: "pack {{ project_id }}"
+    weekday: "1"
+    minute: "0"
+    hour: "3"
+    job: "docker-compose -f /plone/{{ project_id }}/docker-compose.yml exec zeo bin/zeopack"
+    user: plone
+  become: yes
+  tags: 
+    - plone
+    - cron
+

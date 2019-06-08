@@ -44,24 +44,9 @@
     name: '{{ item }}'
     state: present
   with_items:
-    - docker=="{{ py_docker_version }}"
-    - docker-compose=="{{ docker_compose_version }}"
+    - docker=={{ py_docker_version }}
+    - docker-compose=={{ docker_compose_version }}
   become: yes
-
-# - name: Check if Docker Compose is installed
-#   command: docker-compose --version
-#   register: docker_compose_check
-#   ignore_errors: yes
-
-# - name: Download and install Docker Compose
-#   get_url:
-#     url: https://github.com/docker/compose/releases/download/1.23.1/docker-compose-Linux-x86_64
-#     dest: /usr/bin/docker-compose
-#     mode: 0755
-#   when:
-#     - docker_compose_check.msg is defined
-#     - docker_compose_check.msg.find('No such file or directory') != -1
-#   become: yes
 
 - name: docker-compose odoo service
   docker_service:
@@ -84,6 +69,7 @@
             - "traefik.frontend.rule=Host:{{ odoo_hostname }}" #;AddPrefix:/VirtualHostBase/https/{{ odoo_hostname }}/VirtualHostRoot"
         db:
           image: postgres:10
+          restart: always
           environment:
             - POSTGRES_PASSWORD=odoo
             - POSTGRES_USER=odoo
@@ -98,10 +84,30 @@
         default:
           external:
             name: proxy
-  # asse0rt:
+  # assert:
   #   that:
   #     - "web.odoo_web_1.state.running"
   #     - "db.odoo_db_1.state.running"
 
 
+- name: odoo compose | add odoo backup directory
+  file:
+    path: "/backups/odoo"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: 0755
+    state: directory
+  become: yes
+
 # add cron to backup pgdata
+- name: docker-compose start backup at 2:10am.
+  cron:
+    name: "backup odoo instance"
+    minute: "10"
+    hour: "2"
+    job: "docker exec -t odoo_db_1 pg_dumpall -c -U odoo > /backups/odoo/backup_dump.sql"
+    user: "{{ username }}"
+  become: yes
+  tags: 
+    - odoo
+    - cron
