@@ -10,3 +10,8 @@ until [ `docker inspect -f {{ '{{' }}.State.Health.Status{{ '}}' }} $(docker-com
     sleep 1
 done
 docker-compose up -d --force-recreate --no-deps instance2
+until [ `docker inspect -f {{ '{{' }}.State.Health.Status{{ '}}' }} $(docker-compose ps -q instance2)` == "healthy" ]; do
+    sleep 1
+done
+cd /tmp && /usr/bin/wget -q --ignore-length --domain "{{ hostname }}" --delete-after --timeout=4 -nv -E -H -K -p "https://{{ hostname}}/fr/vente"
+

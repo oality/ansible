@@ -57,6 +57,27 @@
     - "/data/{{ project_id }}/filestorage"
     - "/backups/{{ project_id }}"
   become: yes
+  when: image_name != 'plone.restapi'
+  tags:
+    - plone
+
+- name: plone docker-compose | add plone config directory
+  file:
+    path: "{{ item }}"
+    owner: 500
+    group: 500
+    mode: 0755
+    state: directory
+  with_items:
+    - "/data/{{ project_id }}"
+    - "/data/{{ project_id }}/log"
+    - "/data/{{ project_id }}/blobstorage"
+    - "/data/{{ project_id }}/filestorage"
+    - "/data/{{ project_id }}/instance"
+    - "/data/{{ project_id }}/zeoserver"
+    - "/backups/{{ project_id }}"
+  become: yes
+  when: image_name == 'plone.restapi'
   tags:
     - plone
 
@@ -107,7 +128,7 @@
     name: "backup {{ project_id }}"
     minute: "0"
     hour: "2"
-    job: "docker-compose -f /plone/{{ project_id }}/docker-compose.yml run --rm -u plone --entrypoint '' -v /backups/{{ project_id }}:/backups zeo bin/backup"
+    job: "docker-compose -f /plone/{{ project_id }}/docker-compose.yml run --rm -u plone --entrypoint '' -v /backups/{{ project_id }}:/backups zeo bin/backup --no-prompt"
     user: plone
   become: yes
   tags: 
