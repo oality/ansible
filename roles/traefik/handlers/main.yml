@@ -1,0 +1,14 @@
+---
+- name: start traefik
+  systemd:
+    name: traefik
+    state: started
+    enabled: yes
+
+- name: restart traefik
+  systemd:
+    name: traefik
+    state: restarted
+  become_user: root
+  become: yes
+ 

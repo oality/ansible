@@ -1,0 +1,14 @@
+[Unit]
+Description=%i service using Docker Compose
+After=docker.service network-online.target
+Requires=docker.service network-online.target
+
+[Service]
+WorkingDirectory=/plone/%i
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/docker-compose up --force-recreate --detach
+ExecStop=/usr/local/bin/docker-compose down
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,55 @@
+- name: volto docker-compose | add volto directory
+  file:
+    path: "/opt"
+    owner: plone
+    group: plone
+    mode: 0755
+    state: directory
+  become: yes
+  tags:
+    - volto
+
+- name: volto docker-compose | add volto {{ project_id }} directory
+  file:
+    path: "/opt/{{ project_id }}"
+    owner: plone
+    group: plone
+    mode: 0755
+    state: directory
+  become: yes
+  tags:
+    - volto
+
+- name: volto docker-compose |  set docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: "/opt/{{ project_id }}/docker-compose.yml"
+    owner: plone
+    group: plone
+    mode: 0700
+  #notify: restart {{ project_id }}
+  become: yes
+  tags: volto
+
+- name: volto | add systemd service file to server
+  template:
+    src: volto.service
+    dest: /etc/systemd/system/{{ project_id }}.service
+    owner: root
+    group: root
+  become: yes
+  notify:
+    - start {{ project_id }}
+  tags:
+    - volto
+
+- name: volto | start {{ project_id }}
+  systemd:
+    name: "{{ project_id }}"
+    state: started
+    enabled: yes
+  become_user: root
+  become: yes
+
+  tags:
+    - volto

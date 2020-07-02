@@ -1,6 +1,6 @@
 - name: traefik docker-compose | add traefik directory
   file:
-    path: "/home/plone/traefik"
+    path: "/opt/traefik"
     owner: plone
     group: plone
     mode: 0755
@@ -11,7 +11,7 @@
 
 - name: Ensures acme.json file exists
   file:
-    path: "/home/plone/traefik/acme.json"
+    path: "/opt/traefik/acme.json"
     owner: plone
     group: plone
     state: touch
@@ -23,7 +23,7 @@
 - name: Adding traefik.toml file
   template:
     src: ../templates/traefik.toml.j2
-    dest: "/home/plone/traefik/traefik.toml"
+    dest: "/opt/traefik/traefik.toml"
     owner: plone
     group: plone
     mode: 0600
@@ -40,20 +40,34 @@
 - name: plone docker-compose |  set docker-compose file
   template:
     src: docker-compose.yml.j2
-    dest: "/home/plone/traefik/docker-compose.yml"
+    dest: "/opt/traefik/docker-compose.yml"
     owner: plone
     group: plone
     mode: 0700
+  notify: restart traefik
   become: yes
   tags: traefik
 
-- name: docker-compose plone {{ project_id }} service
-  docker_service:
-    project_name: traefik
-    pull: yes
-    project_src: "/home/plone/traefik"
-  become: true
-  become_user: plone
+- name: traefik | add systemd service file to server
+  template:
+    src: traefik.service
+    dest: /etc/systemd/system
+    owner: root
+    group: root
+  become: yes
+  notify:
+    - start traefik
   tags:
     - traefik
+
+- name: traefik | start traefik
+  systemd:
+    name: traefik
+    state: started
+    enabled: yes
+  become_user: root
+  become: yes
+  tags:
+    - traefik
+
 

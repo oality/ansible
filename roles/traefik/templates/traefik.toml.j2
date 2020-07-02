@@ -1,23 +1,19 @@
-debug = false                                                                                                                                                                                                      
+[log]
+  level = "ERROR"
 
-logLevel = "ERROR"
-defaultEntryPoints = ["https","http"]
+[providers.docker]
+
+[api]
+  dashboard = true
 
 [entryPoints]
-  [entryPoints.http]
-  address = ":80"
-    [entryPoints.http.redirect]
-    entryPoint = "https"
-  [entryPoints.https]
-  address = ":443"
-  [entryPoints.https.tls]
+  [entryPoints.web]
+    address = ":80"
+  [entryPoints.websecure]
+    address = ":443"
 
-[retry]
-
-[acme]
+[certificatesResolvers.letsencrypt.acme]
 email = "benoit@suttor.be"
 storage = "acme.json"
-entryPoint = "https"
-onHostRule = true
-  [acme.httpChallenge]
-  entryPoint = "http"
+  [certificatesResolvers.letsencrypt.acme.httpChallenge]
+  entryPoint = "web"

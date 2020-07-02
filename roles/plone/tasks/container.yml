@@ -1,6 +1,6 @@
 - name: plone docker-compose | add plone directory
   file:
-    path: "/plone"
+    path: "/opt"
     owner: plone
     group: plone
     mode: 0755
@@ -11,7 +11,7 @@
 
 - name: plone docker-compose | add plone {{ project_id }} directory
   file:
-    path: "/plone/{{ project_id }}"
+    path: "/opt/{{ project_id }}"
     owner: plone
     group: plone
     mode: 0755
@@ -23,7 +23,7 @@
 - name: plone | add {{ project_id }} restart script
   template:
     src: restart.j2
-    dest: "/plone/{{ project_id }}/restart"
+    dest: "/opt/{{ project_id }}/restart"
     owner: plone
     group: plone
     mode: 0755
@@ -34,7 +34,7 @@
 - name: plone docker-compose | add plone reload script
   template:
     src: reload.j2
-    dest: "/plone/{{ project_id }}/reload"
+    dest: "/opt/{{ project_id }}/reload"
     owner: plone
     group: plone
     mode: 0755
@@ -57,27 +57,6 @@
     - "/data/{{ project_id }}/filestorage"
     - "/backups/{{ project_id }}"
   become: yes
-  when: image_name != 'plone.restapi'
-  tags:
-    - plone
-
-- name: plone docker-compose | add plone config directory
-  file:
-    path: "{{ item }}"
-    owner: 500
-    group: 500
-    mode: 0755
-    state: directory
-  with_items:
-    - "/data/{{ project_id }}"
-    - "/data/{{ project_id }}/log"
-    - "/data/{{ project_id }}/blobstorage"
-    - "/data/{{ project_id }}/filestorage"
-    - "/data/{{ project_id }}/instance"
-    - "/data/{{ project_id }}/zeoserver"
-    - "/backups/{{ project_id }}"
-  become: yes
-  when: image_name == 'plone.restapi'
   tags:
     - plone
 
@@ -95,32 +74,35 @@
 - name: plone docker-compose |  set docker-compose file
   template:
     src: docker-compose.yml.j2
-    dest: "/plone/{{ project_id }}/docker-compose.yml"
+    dest: "/opt/{{ project_id }}/docker-compose.yml"
     owner: plone
     group: plone
     mode: 0700
-  # notify: reload {{ project_id }}
+  notify: restart {{ project_id }}
   become: yes
   tags: plone
 
-- name: docker-compose plone {{ project_id }} service
-  docker_service:
-    project_name: '{{ project_id }}'
-    pull: yes
-    project_src: "/plone/{{ project_id }}"
-  # notify: reload {{ project_id }}
-  become: true
-  become_user: plone
+- name: plone | add systemd service file to server
+  template:
+    src: docker-compose.service
+    dest: /etc/systemd/system/{{ project_id }}.service
+    owner: root
+    group: root
+  become: yes
+  notify:
+    - start {{ project_id }}
   tags:
     - plone
-    - update
-  # assert:
-  #   that:
-  #     - "web.plone_web_1.state.running"
-  #     - "db.plone_db_1.state.running"
 
-
-
+- name: plone | start {{ project_id }}
+  systemd:
+    name: "{{ project_id }}"
+    state: started
+    enabled: yes
+  become_user: root
+  become: yes
+  tags:
+    - plone
 
 # add cron to backup 
 - name: docker-compose start backup at 2am.

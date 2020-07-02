@@ -2,83 +2,57 @@ version: '3.5'
 services:
   zeo:
     image: oality/{{ image_name }}:latest
+    expose:
+      - 8100
     volumes:
-{% if image_name == 'plone.restapi' %}
-      - /data/{{ project_id }}:/data
-{% else %}
-      - /data/{{ project_id }}:/plone/var
-{% endif %}
-{% if image_name == 'plone.restapi' %}
-    command: zeo
-{% else %}
+      - /data/{{ project_id }}/blobstorage:/data/blobstorage
+      - /data/{{ project_id }}/filestorage:/data/filestorage
     command: zeoserver
-{% endif %}
-{% if image_name != 'plone.restapi' %}
     healthcheck:
       test: ["CMD", "nc", "-z", "-w5", "127.0.0.1", "8100"]
-{% endif %}
   instance1:
     image: oality/{{ image_name }}:latest
     restart: always
-{% if image_name == 'plone.restapi' %}
     volumes:
-      - /data/{{ project_id }}:/data
-{% endif %}
-{% if image_name == 'plone.restapi' %}
+      - /data/{{ project_id }}/blobstorage:/data/blobstorage
     ports:
       - 8080
-{% endif %}
     environment:
-{% if image_name == 'plone.restapi' %}
       - ZEO_ADDRESS=zeo:8080
-      - ZEO_SHARED_BLOB_DIR=on
-{% else %}
-      - ZEO_HOST=db
-      - ZEO_PORT=8100
-{% endif %}
     links:
-{% if image_name == 'plone.restapi' %}
       - zeo
-{% else %}
-      - zeo:db
-{% endif %}
     labels:
-      - "traefik.frontend.rule=Host:{{ hostname }}, {{ hostname_redirect }};AddPrefix:/VirtualHostBase/https/{{ hostname }}/plone/VirtualHostRoot"
-      - "traefik.frontend.redirect.regex=^https?://{{ hostname_redirect }}/(.*)"
-      - "traefik.frontend.redirect.replacement={{ hostname }}/$${1}"
-      - "traefik.frontend.redirect.permanent=true"
+      - traefik.http.routers.instance1.rule=Host(`{{ domain }}`) && PathPrefix(`/api`)
+      - traefik.http.routers.instance1.tls=true
+      - traefik.http.routers.instance1.tls.certresolver=letsencrypt
+      - traefik.http.routers.instance1.middlewares=plone-api
+      - traefik.http.middlewares.plone-api.replacepathregex.regex=^/api/(.*)
+      - traefik.http.middlewares.plone-api.replacepathregex.replacement=/VirtualHostBase/https/{{ domain }}/Plone/VirtualHostRoot/_vh_api/$$1
+      - traefik.http.middlewares.instance1.redirectscheme.scheme=websecure
+      - traefik.http.middlewares.instance1.redirectscheme.permanent=true
   instance2:
     image: oality/{{ image_name }}:latest
     restart: always
-{% if image_name == 'plone.restapi' %}
     volumes:
-      - /data/{{ project_id }}:/data
-{% endif %}
-{% if image_name == 'plone.restapi' %}
+      - /data/{{ project_id }}/blobstorage:/data/blobstorage
     ports:
       - 8080
-{% endif %}
     environment:
-{% if image_name == 'plone.restapi' %}
       - ZEO_ADDRESS=zeo:8080
-      - ZEO_SHARED_BLOB_DIR=on
-{% else %}
-      - ZEO_HOST=db
-      - ZEO_PORT=8100
-{% endif %}
     links:
-{% if image_name == 'plone.restapi' %}
       - zeo
-{% else %}
-      - zeo:db
-{% endif %}
     labels:
-      - "traefik.frontend.rule=Host:{{ hostname }}, {{ hostname_redirect }};AddPrefix:/VirtualHostBase/https/{{ hostname }}/plone/VirtualHostRoot"
-      - "traefik.frontend.redirect.regex=^https?://{{ hostname_redirect }}/(.*)"
-      - "traefik.frontend.redirect.replacement={{ hostname }}/$${1}"
-      - "traefik.frontend.redirect.permanent=true"
+      - traefik.http.routers.instance2.rule=Host(`{{ domain }}`) && PathPrefix(`/api`)
+      - traefik.http.routers.instance2.tls=true
+      - traefik.http.routers.instance2.tls.certresolver=letsencrypt
+      - traefik.http.routers.instance2.middlewares=plone-api
+      - traefik.http.middlewares.plone-api.replacepathregex.regex=^/api/(.*)
+      - traefik.http.middlewares.plone-api.replacepathregex.replacement=/VirtualHostBase/https/{{ domain }}/Plone/VirtualHostRoot/_vh_api/$$1
+      - traefik.http.middlewares.instance2.redirectscheme.scheme=websecure
+      - traefik.http.middlewares.instance2.redirectscheme.permanent=true
 
 networks:
   default:
     external:
       name: proxy
+
