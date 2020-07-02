@@ -49,7 +49,7 @@
   become: yes
 
 - name: docker-compose odoo service
-  docker_service:
+  docker_compose:
     project_name: odoo
     definition:
       version: '2'
@@ -66,7 +66,12 @@
             - /data/odoo/config:/etc/odoo
             - /data/odoo/addons:/mnt/extra-addons
           labels:
-            - "traefik.frontend.rule=Host:{{ odoo_hostname }}" #;AddPrefix:/VirtualHostBase/https/{{ odoo_hostname }}/VirtualHostRoot"
+            - traefik.http.routers.odoo.rule=Host(`{{ odoo_hostname }}`)
+            - traefik.http.routers.odoo.tls=true
+            - traefik.http.routers.odoo.tls.certresolver=letsencrypt
+            - traefik.http.services.odoo.loadbalancer.server.port=8069
+            - traefik.http.middlewares.odoo.redirectscheme.scheme=websecure
+            - traefik.http.middlewares.odoo.redirectscheme.permanent=true
         db:
           image: postgres:10
           restart: always
@@ -84,7 +89,9 @@
         default:
           external:
             name: proxy
-  # assert:
+  tags: 
+    - odoo
+# assert:
   #   that:
   #     - "web.odoo_web_1.state.running"
   #     - "db.odoo_db_1.state.running"
