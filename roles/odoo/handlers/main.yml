@@ -1,0 +1,14 @@
+---
+- name: start odoo
+  systemd:
+    name: "odoo"
+    state: started
+    enabled: yes
+
+- name: restart odoo
+  systemd:
+    name: "odoo"
+    state: restarted
+    enabled: yes
+  become_user: root
+  become: yes

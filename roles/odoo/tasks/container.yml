@@ -6,6 +6,8 @@
     mode: 0755
     state: directory
   become: yes
+  tags:
+    - odoo
 
 - name: odoo compose | add odoo config directory
   file:
@@ -14,6 +16,9 @@
     group: "{{ username }}"
     mode: 0755
     state: directory
+  become: yes
+  tags:
+    - odoo
 
 - name: odoo compose | add odoo config file
   template:
@@ -22,6 +27,9 @@
     owner: "{{ username }}"
     group: "{{ username }}"
     mode: 0755
+  become: yes
+  tags:
+    - odoo
 
 - name: odoo compose | add odoo addons directory
   file:
@@ -30,6 +38,9 @@
     group: "{{ username }}"
     mode: 0755
     state: directory
+  become: yes
+  tags:
+    - odoo
 
 - name: odoo compose | add odoo pgdata directory
   file:
@@ -38,59 +49,105 @@
     group: "{{ username }}"
     mode: 0755
     state: directory
-
-- name: make sure required docker package is installed
-  pip:
-    name: '{{ item }}'
-    state: present
-  with_items:
-    - docker=={{ py_docker_version }}
-    - docker-compose=={{ docker_compose_version }}
   become: yes
-
-- name: docker-compose odoo service
-  docker_compose:
-    project_name: odoo
-    definition:
-      version: '2'
-      services:
-        web:
-          image: odoo:12.0
-          depends_on:
-            - db
-          ports:
-            - "8069:8069"
-          restart: always
-          volumes:
-            - odoo-web-data:/var/lib/odoo
-            - /data/odoo/config:/etc/odoo
-            - /data/odoo/addons:/mnt/extra-addons
-          labels:
-            - traefik.http.routers.odoo.rule=Host(`{{ odoo_hostname }}`)
-            - traefik.http.routers.odoo.tls=true
-            - traefik.http.routers.odoo.tls.certresolver=letsencrypt
-            - traefik.http.services.odoo.loadbalancer.server.port=8069
-            - traefik.http.middlewares.odoo.redirectscheme.scheme=websecure
-            - traefik.http.middlewares.odoo.redirectscheme.permanent=true
-        db:
-          image: postgres:10
-          restart: always
-          environment:
-            - POSTGRES_PASSWORD=odoo
-            - POSTGRES_USER=odoo
-            - PGDATA=/var/lib/postgresql/data/pgdata
-            - POSTGRES_DB=postgres
-          volumes:
-            - odoo-db-data:/var/lib/postgresql/data/pgdata
-      volumes:
-        odoo-web-data:
-        odoo-db-data:
-      networks:
-        default:
-          external:
-            name: proxy
-  tags: 
+  tags:
     - odoo
+
+- name: odoo compose | add odoo docker-compose
+  file:
+    path: "/opt/odoo"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: 0755
+    state: directory
+  become: yes
+  tags:
+    - odoo
+
+
+#- name: make sure required docker package is installed
+#  pip:
+#    name: '{{ item }}'
+#    state: present
+#  with_items:
+#    - docker=={{ py_docker_version }}
+#    - docker-compose=={{ docker_compose_version }}
+#  become: yes
+
+- name: odoo docker-compose | set docker-compose file
+  template:
+    src: docker-compose.yml.j2
+    dest: "/opt/odoo/docker-compose.yml"
+    owner: "{{ username }}"
+    group: "{{ username }}"
+    mode: 0700
+  notify: restart odoo
+  become: yes
+  tags: odoo
+
+- name: odoo | add systemd service file to server
+  template:
+    src: odoo.service
+    dest: /etc/systemd/system/odoo.service
+    owner: root
+    group: root
+  become: yes
+  notify:
+    - start odoo
+  tags:
+    - odoo
+
+- name: odoo | start odoo
+  systemd:
+    name: "odoo"
+    state: started
+    enabled: yes
+  become_user: root
+  become: yes
+  tags:
+    - odoo
+    
+#- name: docker-compose odoo service
+#  docker_compose:
+#    project_name: odoo
+#    definition:
+#      version: '2'
+#      services:
+#        web:
+#          image: odoo:12.0
+#          depends_on:
+#            - db
+#          ports:
+#            - "8069:8069"
+#          restart: always
+#          volumes:
+#            - odoo-web-data:/var/lib/odoo
+#            - /data/odoo/config:/etc/odoo
+#            - /data/odoo/addons:/mnt/extra-addons
+#          labels:
+#            - traefik.http.routers.odoo.rule=Host(`{{ odoo_hostname }}`)
+#            - traefik.http.routers.odoo.tls=true
+#            - traefik.http.routers.odoo.tls.certresolver=letsencrypt
+#            - traefik.http.services.odoo.loadbalancer.server.port=8069
+#        db:
+#          image: postgres:10
+#          restart: always
+#          environment:
+#            - POSTGRES_PASSWORD=odoo
+#            - POSTGRES_USER=odoo
+#            - PGDATA=/var/lib/postgresql/data/pgdata
+#            - POSTGRES_DB=postgres
+#          volumes:
+#            - odoo-db-data:/var/lib/postgresql/data/pgdata
+#      volumes:
+#        odoo-web-data:
+#        odoo-db-data:
+#      networks:
+#        default:
+#          external:
+#            name: proxy
+#  tags:
+#    - odoo
 # assert:
   #   that:
   #     - "web.odoo_web_1.state.running"
@@ -115,6 +172,6 @@
     job: "docker exec -t odoo_db_1 pg_dumpall -c -U odoo > /backups/odoo/backup_dump.sql"
     user: "{{ username }}"
   become: yes
-  tags: 
+  tags:
     - odoo
     - cron

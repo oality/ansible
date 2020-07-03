@@ -5,7 +5,7 @@
     state: started
     enabled: yes
 
-- name: retart {{ project_id }}
+- name: restart {{ project_id }}
   systemd:
     name: "{{ project_id }}"
     state: restarted

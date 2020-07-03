@@ -22,14 +22,12 @@ services:
     links:
       - zeo
     labels:
-      - traefik.http.routers.instance1.rule=Host(`{{ domain }}`) && PathPrefix(`/api`)
+      - traefik.http.routers.instance1.rule=Host(`{{ domain }}`) && PathPrefix(`/api`) || Host(`{{ domain2 }}`) && PathPrefix(`/api`)
       - traefik.http.routers.instance1.tls=true
       - traefik.http.routers.instance1.tls.certresolver=letsencrypt
-      - traefik.http.routers.instance1.middlewares=plone-api
-      - traefik.http.middlewares.plone-api.replacepathregex.regex=^/api/(.*)
-      - traefik.http.middlewares.plone-api.replacepathregex.replacement=/VirtualHostBase/https/{{ domain }}/Plone/VirtualHostRoot/_vh_api/$$1
-      - traefik.http.middlewares.instance1.redirectscheme.scheme=websecure
-      - traefik.http.middlewares.instance1.redirectscheme.permanent=true
+      - traefik.http.routers.instance1.middlewares=plone-api-path
+      - traefik.http.middlewares.plone-api-path.replacepathregex.regex=^/api(.*)
+      - traefik.http.middlewares.plone-api-path.replacepathregex.replacement=/VirtualHostBase/https/{{ domain }}/Plone/VirtualHostRoot/_vh_api/$$1
   instance2:
     image: oality/{{ image_name }}:latest
     restart: always
@@ -42,14 +40,12 @@ services:
     links:
       - zeo
     labels:
-      - traefik.http.routers.instance2.rule=Host(`{{ domain }}`) && PathPrefix(`/api`)
+      - traefik.http.routers.instance2.rule=Host(`{{ domain }}`) && PathPrefix(`/api`) || Host(`{{ domain2 }}`) && PathPrefix(`/api`)
       - traefik.http.routers.instance2.tls=true
       - traefik.http.routers.instance2.tls.certresolver=letsencrypt
-      - traefik.http.routers.instance2.middlewares=plone-api
-      - traefik.http.middlewares.plone-api.replacepathregex.regex=^/api/(.*)
-      - traefik.http.middlewares.plone-api.replacepathregex.replacement=/VirtualHostBase/https/{{ domain }}/Plone/VirtualHostRoot/_vh_api/$$1
-      - traefik.http.middlewares.instance2.redirectscheme.scheme=websecure
-      - traefik.http.middlewares.instance2.redirectscheme.permanent=true
+      - traefik.http.routers.instance2.middlewares=plone-api-path
+      - traefik.http.middlewares.plone-api-path.replacepathregex.regex=^/api(.*)
+      - traefik.http.middlewares.plone-api-path.replacepathregex.replacement=/VirtualHostBase/https/{{ domain }}/Plone/VirtualHostRoot/_vh_api/$$1
 
 networks:
   default:

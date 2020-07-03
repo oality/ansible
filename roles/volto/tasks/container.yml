@@ -27,7 +27,7 @@
     owner: plone
     group: plone
     mode: 0700
-  #notify: restart {{ project_id }}
+  notify: restart {{ project_id }}
   become: yes
   tags: volto
 

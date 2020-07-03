@@ -11,14 +11,29 @@ services:
       - /opt/traefik/traefik.toml:/etc/traefik/traefik.toml
       - /opt/traefik/acme.json:/acme.json
     labels:
-      - traefik.http.routers.api.rule=Host(`traefik.oality.com`)
-      - traefik.http.routers.api.service=api@internal
-      - traefik.http.routers.api.middlewares=auth
-      - traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$ombkBE7v$$HIo9HdMi6VmxuUQagANBs0
-      #- traefik.http.routers.api.tls=true
-      #- traefik.http.routers.api.tls.certresolver=letsencrypt
-      #- traefik.http.middlewares.api.redirectscheme.scheme=websecure
-      #- traefik.http.middlewares.api.redirectscheme.permanent=true
+      traefik.http.routers.api.rule: Host(`traefik.oality.com`)
+      traefik.http.routers.api.service: api@internal
+      traefik.http.routers.api.middlewares: auth
+      traefik.http.middlewares.auth.basicauth.users: admin:$$apr1$$ombkBE7v$$HIo9HdMi6VmxuUQagANBs0
+      traefik.http.routers.api.tls: true
+      traefik.http.routers.api.tls.certresolver: letsencrypt
+
+      # Global redirection: http to https
+      traefik.http.routers.http-catchall.rule: HostRegexp(`{host:(www\.)?.+}`)
+      traefik.http.routers.http-catchall.entrypoints: web
+      traefik.http.routers.http-catchall.middlewares: wwwtohttps
+
+      # Global redirection: https (www.) to https
+      traefik.http.routers.wwwsecure-catchall.rule: HostRegexp(`{host:(www\.).+}`)
+      traefik.http.routers.wwwsecure-catchall.entrypoints: websecure
+      traefik.http.routers.wwwsecure-catchall.tls: true
+      traefik.http.routers.wwwsecure-catchall.middlewares: wwwtohttps
+
+      # middleware: http(s)://(www.) to  https://
+      traefik.http.middlewares.wwwtohttps.redirectregex.regex: ^https?://(?:www\.)?(.+)
+      traefik.http.middlewares.wwwtohttps.redirectregex.replacement: https://$${1}
+      traefik.http.middlewares.wwwtohttps.redirectregex.permanent: true
+
 
 networks:
   default:

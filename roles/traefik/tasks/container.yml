@@ -1,8 +1,8 @@
 - name: traefik docker-compose | add traefik directory
   file:
     path: "/opt/traefik"
-    owner: plone
-    group: plone
+    owner: root
+    group: root
     mode: 0755
     state: directory
   become: yes
@@ -12,8 +12,8 @@
 - name: Ensures acme.json file exists
   file:
     path: "/opt/traefik/acme.json"
-    owner: plone
-    group: plone
+    owner: root
+    group: root
     state: touch
     mode: 0600
   become: yes
@@ -24,8 +24,8 @@
   template:
     src: ../templates/traefik.toml.j2
     dest: "/opt/traefik/traefik.toml"
-    owner: plone
-    group: plone
+    owner: root
+    group: root
     mode: 0600
   become: yes
   tags:
@@ -37,12 +37,12 @@
   tags:
     - traefik
 
-- name: plone docker-compose |  set docker-compose file
+- name: traefik docker-compose |  set docker-compose file
   template:
     src: docker-compose.yml.j2
     dest: "/opt/traefik/docker-compose.yml"
-    owner: plone
-    group: plone
+    owner: root
+    group: root
     mode: 0700
   notify: restart traefik
   become: yes

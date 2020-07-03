@@ -6,11 +6,13 @@ services:
       - 3000
     labels:
       - traefik.enable=true
-      - traefik.http.routers.website.rule=Host(`{{ domain }}`)
+      - traefik.http.routers.website.rule=Host(`{{ domain }}`) || Host(`{{ domain2 }}`)
       - traefik.http.routers.website.tls=true
       - traefik.http.routers.website.tls.certresolver=letsencrypt
-      - traefik.http.middlewares.website.redirectscheme.scheme=websecure
-      - traefik.http.middlewares.website.redirectscheme.permanent=true
+      - traefik.http.routers.instance1.middlewares=redirect-domain
+      - traefik.http.middlewares.redirect-domain.redirectregex.regex=^http://{{ domain2 }}/(.*)"
+      - traefik.http.middlewares.redirect-domain.redirectregex.replacement=http://{{ domain }}/$${1}"
+
 
 networks:
   default:
