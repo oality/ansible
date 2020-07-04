@@ -10,8 +10,8 @@ services:
       - traefik.http.routers.website.tls=true
       - traefik.http.routers.website.tls.certresolver=letsencrypt
       - traefik.http.routers.instance1.middlewares=redirect-domain
-      - traefik.http.middlewares.redirect-domain.redirectregex.regex=^http://{{ domain2 }}/(.*)"
-      - traefik.http.middlewares.redirect-domain.redirectregex.replacement=http://{{ domain }}/$${1}"
+      - traefik.http.middlewares.redirect-domain.redirectregexdomain.regex=^https://{{ domain2 }}/(.*)"
+      - traefik.http.middlewares.redirect-domain.redirectregexdomain.replacement=https://{{ domain }}/$${1}"
 
 
 networks:
