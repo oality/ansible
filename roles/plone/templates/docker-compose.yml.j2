@@ -22,7 +22,7 @@ services:
     links:
       - zeo
     labels:
-      - traefik.http.routers.instance1.rule=Host(`{{ domain }}`) && PathPrefix(`/api`) || Host(`{{ domain2 }}`) && PathPrefix(`/api`)
+      - traefik.http.routers.instance1.rule=Host(`{{ domain }}`) && PathPrefix(`/api`)
       - traefik.http.routers.instance1.tls=true
       - traefik.http.routers.instance1.tls.certresolver=letsencrypt
       - traefik.http.routers.instance1.middlewares=plone-api-path
@@ -40,7 +40,7 @@ services:
     links:
       - zeo
     labels:
-      - traefik.http.routers.instance2.rule=Host(`{{ domain }}`) && PathPrefix(`/api`) || Host(`{{ domain2 }}`) && PathPrefix(`/api`)
+      - traefik.http.routers.instance2.rule=Host(`{{ domain }}`) && PathPrefix(`/api`)
       - traefik.http.routers.instance2.tls=true
       - traefik.http.routers.instance2.tls.certresolver=letsencrypt
       - traefik.http.routers.instance2.middlewares=plone-api-path
