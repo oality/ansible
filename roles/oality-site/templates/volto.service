@@ -1,0 +1,15 @@
+[Unit]
+Description={{ project_id }} service using Docker Compose
+After=docker.service network-online.target
+Requires=docker.service network-online.target
+
+[Service]
+WorkingDirectory=/opt/{{ project_id }}
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/usr/bin/docker-compose pull
+ExecStart=/usr/bin/docker-compose up --force-recreate --detach --scale website=2
+ExecStop=/usr/bin/docker-compose down
+
+[Install]
+WantedBy=multi-user.target

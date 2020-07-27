@@ -1,0 +1,18 @@
+version: '3.5'
+services:
+  website:
+    image: oality/website:latest
+    ports:
+      - 3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.website.rule=Host(`oality.com`) || Host(`oality.be`)
+      - traefik.http.routers.website.tls=true
+      - traefik.http.routers.website.tls.certresolver=letsencrypt
+      - traefik.http.routers.website.middlewares=betocom, wwwtohttps
+
+networks:
+  default:
+    external:
+      name: proxy
+

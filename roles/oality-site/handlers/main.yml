@@ -1,0 +1,16 @@
+---
+- name: start {{ project_id }}
+  systemd:
+    name: "{{ project_id }}"
+    state: started
+    enabled: yes
+  become_user: root
+  become: yes
+
+- name: restart {{ project_id }}
+  systemd:
+    name: "{{ project_id }}"
+    state: restarted
+    enabled: yes
+  become_user: root
+  become: yes

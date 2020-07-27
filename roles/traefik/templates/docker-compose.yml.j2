@@ -34,13 +34,8 @@ services:
       traefik.http.middlewares.wwwtohttps.redirectregex.replacement: https://$${1}
       traefik.http.middlewares.wwwtohttps.redirectregex.permanent: true
 
-      # Global redirection: oality.be to oality.com
-      traefik.http.routers.be-to-com.rule: Host(`oality.be`)
-      traefik.http.routers.be-to-com.entrypoints: websecure
-      traefik.http.routers.be-to-com.tls: true
-      traefik.http.routers.be-to-com.middlewares: betocom
-
       # middleware: oality.be to oality.com
+      # traefik.http.middlewares.betocom.redirectregex.regex: ^https?://(?:www\.)?oality.be(.+)
       traefik.http.middlewares.betocom.redirectregex.regex: ^https?://oality.be(.+)
       traefik.http.middlewares.betocom.redirectregex.replacement: https://oality.com$${1}
       traefik.http.middlewares.betocom.redirectregex.permanent: true
